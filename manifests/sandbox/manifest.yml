@@ -1,0 +1,6 @@
+---
+applications:
+- name: etf-sandbox
+  memory: 512M
+  buildpacks:
+  - python_buildpack

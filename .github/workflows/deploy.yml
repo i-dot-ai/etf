@@ -1,0 +1,109 @@
+name: Deploy etf App
+
+env:
+  DOCKER_BUILDKIT: 1
+
+on:
+  push:
+    branches:
+      - sandbox
+      - develop
+
+permissions:
+  packages: write
+  repository-projects: read
+  id-token: write
+  contents: read
+
+jobs:
+  push_etf_image:
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_TAG: ${{ github.ref_name }}
+      DOCKER_REPOSITORY: ghcr.io
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build, tag, and push etf image
+        env:
+          DOCKER_FILE: Dockerfile
+          DOCKER_IMAGE: etf
+
+        run: |
+          docker build . --file $DOCKER_FILE --tag $DOCKER_REPOSITORY/${{ github.repository_owner }}/$DOCKER_IMAGE:$IMAGE_TAG
+          docker push -a $DOCKER_REPOSITORY/${{ github.repository_owner }}/$DOCKER_IMAGE
+
+  deploy_etf_image:
+    needs: [push_etf_image]
+
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_TAG: ${{ github.ref_name }}
+      DOCKER_REPOSITORY: ghcr.io
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get non-prod space name
+        if:  ${{ github.event_name != 'release' }}
+        uses: kanga333/variable-mapper@v0.2.2
+        with:
+          key: "${{github.ref_name}}"
+          map: |
+            {
+              "sandbox": {"CF_SPACE": "sandbox"},
+              "demo": {"CF_SPACE": "demo"},
+              "temp": {"CF_SPACE": "temp"},
+              "develop": {"CF_SPACE": "develop"},
+              "staging": {"CF_SPACE": "staging"},
+              "pentest": {"CF_SPACE": "pentest"},
+              "feature/deploy-from-main": {"CF_SPACE": "flibble"}
+            }
+
+      - name: Get prod space name
+        if:  ${{ github.event_name == 'release' }}
+        uses: kanga333/variable-mapper@v0.2.2
+        with:
+          key: "${{github.ref_name}}"
+          map: |
+            {
+              "v?.?.?": {"CF_SPACE": "prod"},
+              "feature/deploy-from-main": {"CF_SPACE": "flibble"}
+            }
+
+      - name: Download CF CLI
+        run: curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v7&source=github" | tar -zx
+
+      - name: CF login
+        run: ./cf login -a api.london.cloud.service.gov.uk -u "${{ secrets.CF_USER }}" -p "${{ secrets.CF_PASSWORD }}" -o co-i-ai -s "$CF_SPACE"
+
+      - name: CF push etf app
+        env:
+          DOCKER_FILE: Dockerfile
+          DOCKER_IMAGE: etf
+          PAT_TOKEN_USER: ${{ secrets.PAT_TOKEN_USER }}
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: CF_DOCKER_PASSWORD="$PAT_TOKEN" ./cf push -f manifests/"$CF_SPACE"/etf_manifest.yml --docker-image $DOCKER_REPOSITORY/${{ github.repository_owner }}/$DOCKER_IMAGE:$IMAGE_TAG --docker-username=$PAT_TOKEN_USER --no-start
+
+      - uses: actions/checkout@v2
+      - name: Slack Notification
+        continue-on-error: true
+        if: ${{ failure() && github.ref_name == 'prod' || failure() && github.ref_name == 'develop' }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: '#FF0000'
+          SLACK_ICON: https://avatars0.githubusercontent.com/u/818058?s=200&v=4
+          SLACK_TITLE: '${{ github.ref_name }} deployment ${{ job.status }} :warning:'
+          SLACK_USERNAME: ${{ github.actor }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: '${{ github.ref_name }} Action ${{ job.status }}'
