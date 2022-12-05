@@ -17,6 +17,7 @@ DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = [
     "etf-develop.london.cloudapps.digital",
+    "etf-sandbox.london.cloudapps.digital",
     "localhost",
     "127.0.0.1",
 ]

@@ -93,7 +93,7 @@ jobs:
           DOCKER_IMAGE: etf
           PAT_TOKEN_USER: ${{ secrets.PAT_TOKEN_USER }}
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: CF_DOCKER_PASSWORD="$PAT_TOKEN" ./cf push -f manifests/"$CF_SPACE"/etf_manifest.yml --docker-image $DOCKER_REPOSITORY/${{ github.repository_owner }}/$DOCKER_IMAGE:$IMAGE_TAG --docker-username=$PAT_TOKEN_USER --no-start
+        run: CF_DOCKER_PASSWORD="$PAT_TOKEN" ./cf push -f manifests/"$CF_SPACE"/etf_manifest.yml --docker-image $DOCKER_REPOSITORY/${{ github.repository_owner }}/$DOCKER_IMAGE:$IMAGE_TAG --docker-username=$PAT_TOKEN_USER
 
       - uses: actions/checkout@v2
       - name: Slack Notification
