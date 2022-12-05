@@ -1,11 +1,11 @@
 ---
 applications:
 - name: etf-sandbox
-services:
-  - etf-postgres-sandbox
-  routes:
-  - route: etf-sandbox.london.cloudapps.digital
-    protocol: http1
+  services:
+    - etf-postgres-sandbox
+    routes:
+    - route: etf-sandbox.london.cloudapps.digital
+      protocol: http1
   disk_quota: 4092M
   memory: 512M
   health-check-type: port
