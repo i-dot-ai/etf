@@ -9,5 +9,3 @@ applications:
   disk_quota: 4092M
   memory: 512M
   health-check-type: port
-  buildpacks:
-  - python_buildpack
