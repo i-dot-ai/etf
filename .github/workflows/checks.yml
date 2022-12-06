@@ -12,6 +12,7 @@ on:
       - 'hotfix/**'
       - 'develop'
       - 'pentest'
+      - 'sandbox'
 
 jobs:
   check_web:
