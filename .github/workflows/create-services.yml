@@ -1,55 +1,18 @@
-name: Deploy ETF App
+name: Create ETF Services
 
 env:
   DOCKER_BUILDKIT: 1
 
 on:
-  push:
+  workflow_dispatch:
     branches:
       - sandbox
       - develop
 
-permissions:
-  packages: write
-  repository-projects: read
-  id-token: write
-  contents: read
-
 jobs:
-  push_etf_image:
+  create_cfservices:
+    if:  ${{ github.event_name != 'release' && github.ref_name != 'prod' }}
     runs-on: ubuntu-latest
-
-    env:
-      IMAGE_TAG: ${{ github.ref_name }}
-      DOCKER_REPOSITORY: ghcr.io
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build, tag, and push etf image
-        env:
-          DOCKER_FILE: Dockerfile
-          DOCKER_IMAGE: etf
-
-        run: |
-          docker build . --file $DOCKER_FILE --tag $DOCKER_REPOSITORY/${{ github.repository_owner }}/$DOCKER_IMAGE:$IMAGE_TAG
-          docker push -a $DOCKER_REPOSITORY/${{ github.repository_owner }}/$DOCKER_IMAGE
-
-  deploy_etf_image:
-    needs: [push_etf_image]
-
-    runs-on: ubuntu-latest
-
-    env:
-      IMAGE_TAG: ${{ github.ref_name }}
-      DOCKER_REPOSITORY: ghcr.io
 
     steps:
       - uses: actions/checkout@v3
@@ -82,18 +45,17 @@ jobs:
             }
 
       - name: Download CF CLI
+        working-directory: ./cfscripts
         run: curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v7&source=github" | tar -zx
 
       - name: CF login
+        working-directory: ./cfscripts
         run: ./cf login -a api.london.cloud.service.gov.uk -u "${{ secrets.CF_USER }}" -p "${{ secrets.CF_PASSWORD }}" -o co-i-ai -s "$CF_SPACE"
 
-      - name: CF push etf app
-        env:
-          DOCKER_FILE: Dockerfile
-          DOCKER_IMAGE: etf
-          PAT_TOKEN_USER: ${{ secrets.PAT_TOKEN_USER }}
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: CF_DOCKER_PASSWORD="$PAT_TOKEN" ./cf push -f manifests/"$CF_SPACE"/etf_manifest.yml --docker-image $DOCKER_REPOSITORY/${{ github.repository_owner }}/$DOCKER_IMAGE:$IMAGE_TAG --docker-username=$PAT_TOKEN_USER
+      - name: Run etf Services Script
+        working-directory: ./cfscripts
+        run: |
+            ./etf-services.sh
 
       - uses: actions/checkout@v2
       - name: Slack Notification
