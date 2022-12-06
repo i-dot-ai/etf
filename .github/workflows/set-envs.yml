@@ -57,10 +57,6 @@ jobs:
       - name: Run etf ENVs Script
         working-directory: ./cfscripts
         env:
-          TEAM_NOTIFY_API_KEY: ${{ secrets.TEAM_NOTIFY_API_KEY }}
-          LIVE_NOTIFY_API_KEY: ${{ secrets.LIVE_NOTIFY_API_KEY }}
-          NOTIFY_PLAIN_EMAIL_TEMPLATE_ID: ${{ secrets.NOTIFY_PLAIN_EMAIL_TEMPLATE_ID }}
-          SENTRY_DNS: ${{ secrets.SENTRY_DNS }}
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
           LIVE_DJANGO_SECRET_KEY: ${{ secrets.LIVE_DJANGO_SECRET_KEY }}
         run: |
