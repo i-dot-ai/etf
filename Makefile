@@ -29,5 +29,3 @@ check-migrations:
 	docker-compose build web
 	docker-compose run web python manage.py migrate
 	docker-compose run web python manage.py makemigrations --check
-	# docker-compose run organogram python manage.py migrate
-	# docker-compose run organogram python manage.py makemigrations --check

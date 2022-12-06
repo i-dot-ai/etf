@@ -1,0 +1,11 @@
+---
+applications:
+- name: etf-develop
+  services:
+    - etf-postgres-develop
+  routes:
+  - route: etf-develop.london.cloudapps.digital
+    protocol: http1
+  disk_quota: 4092M
+  memory: 512M
+  health-check-type: port
