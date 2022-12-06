@@ -31,15 +31,11 @@ jobs:
     - name: Install Dependencies
       run: |
         python3 -m pip install --upgrade pip setuptools
-        pip install -r api/requirements-dev.lock
+        pip install -r etf/requirements-dev.lock
 
     - name: Run Python Code Checks
       run: |
         make check-python-code
-
-    - name: Run API Tests
-      run: |
-        make test-api
 
     - uses: actions/checkout@v2
     - name: Slack Notification
@@ -64,8 +60,8 @@ jobs:
       - uses: actions/checkout@v3
 
       - run: |
-          docker-compose build api organogram
-          docker-compose run api python manage.py makemigrations --check
+          docker-compose build etf organogram
+          docker-compose run etf python manage.py makemigrations --check
           docker-compose run organogram python manage.py makemigrations --check
 
       - uses: actions/checkout@v2
