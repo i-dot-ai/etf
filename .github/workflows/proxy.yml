@@ -1,0 +1,108 @@
+---
+name: Deploy Proxy
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - pentest
+    paths:
+      - .github/workflows/proxy.yml
+      - 'proxy/**'
+  workflow_dispatch:
+    branches:
+      - temp
+      - demo
+      - sandbox
+      - pentest
+      - develop
+      - prod
+
+permissions:
+  packages: write
+  repository-projects: read
+  id-token: write
+  contents: read
+
+
+jobs:
+  deploy_proxy:
+
+    runs-on: ubuntu-latest
+
+    env:
+      CF_SPACE: ${{ github.ref_name }}
+
+    strategy:
+      matrix:
+        app: [etf]
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - name: Download CF CLI
+        working-directory: ./proxy
+        run: curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v7&source=github" | tar -zx
+
+      - name: CF login
+        working-directory: ./proxy
+        run: ./cf login -a api.london.cloud.service.gov.uk -u "${{ secrets.CF_USER }}" -p "${{ secrets.CF_PASSWORD }}" -o co-i-ai -s "$CF_SPACE"
+
+      - name: Get IPs
+        id: get_ips
+        working-directory: ./proxy
+        run: echo "::set-output name=ips::$(grep -o '^[^#]*' whitelisted_ips.txt | tr '\n' ' ')"
+
+      - name: CF push proxy apps non-prod
+        if: ${{ github.ref_name != 'prod' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          ROUTE_SERVICE_APP_NAME: ${{ matrix.app }}-proxy-${{ github.ref_name }}
+          ROUTE_SERVICE_NAME: ${{ matrix.app }}-route-${{ github.ref_name }}
+          PROTECTED_APP_NAME: ${{ matrix.app }}-${{ github.ref_name }}
+          ALLOWED_IPS: ${{ steps.get_ips.outputs.ips }}
+        working-directory: ./proxy
+        run: |
+            ./proxy-deploy.sh
+
+      # - name: CF push proxy apps non-prod
+      #   if: ${{ github.ref_name == 'prod' && matrix.app == 'organogram' }}
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     GITHUB_ACTOR: ${{ github.actor }}
+      #     ROUTE_SERVICE_APP_NAME: ${{ matrix.app }}-proxy
+      #     ROUTE_SERVICE_NAME: ${{ matrix.app }}-route
+      #     PROTECTED_APP_NAME: digital-${{ matrix.app }}
+      #     ALLOWED_IPS: ${{ steps.get_ips.outputs.ips }}
+      #   working-directory: ./proxy
+      #   run: |
+      #       ./proxy-deploy.sh
+
+      - name: CF push proxy apps non-prod
+        if: ${{ github.ref_name == 'prod' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          ROUTE_SERVICE_APP_NAME: ${{ matrix.app }}-proxy
+          ROUTE_SERVICE_NAME: ${{ matrix.app }}-route
+          PROTECTED_APP_NAME: ${{ matrix.app }}
+          ALLOWED_IPS: ${{ steps.get_ips.outputs.ips }}
+        working-directory: ./proxy
+        run: |
+            ./proxy-deploy.sh
+
+      - uses: actions/checkout@v2
+      - name: Slack Notification
+        continue-on-error: true
+        if: ${{ failure() && github.ref_name == 'prod' || failure() && github.ref_name == 'develop' }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: '#FF0000'
+          SLACK_ICON: https://avatars0.githubusercontent.com/u/818058?s=200&v=4
+          SLACK_TITLE: '${{ github.ref_name }} deployment ${{ job.status }} :warning:'
+          SLACK_USERNAME: ${{ github.actor }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: '${{ github.ref_name }} Action ${{ job.status }}'
