@@ -1,0 +1,81 @@
+name: Check code
+
+env:
+  DOCKER_BUILDKIT: 1
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'hotfix/**'
+      - 'develop'
+      - 'pentest'
+
+jobs:
+  check_web:
+    name: Check web
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.8
+
+    - name: Install Dependencies
+      run: |
+        python3 -m pip install --upgrade pip setuptools
+        pip install -r api/requirements-dev.lock
+
+    - name: Run Python Code Checks
+      run: |
+        make check-python-code
+
+    - name: Run API Tests
+      run: |
+        make test-api
+
+    - uses: actions/checkout@v2
+    - name: Slack Notification
+      continue-on-error: true
+      if: ${{ failure() }}
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_COLOR: '#FF0000'
+        SLACK_ICON: https://avatars0.githubusercontent.com/u/818058?s=200&v=4
+        SLACK_TITLE: '${{ github.ref_name }} CodeCheck ${{ job.status }} :warning:'
+        SLACK_USERNAME: ${{ github.actor }}
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_MESSAGE: '${{ github.ref_name }} Action ${{ job.status }}'
+
+
+  check_migrations:
+    name: Check Migrations
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - run: |
+          docker-compose build api organogram
+          docker-compose run api python manage.py makemigrations --check
+          docker-compose run organogram python manage.py makemigrations --check
+
+      - uses: actions/checkout@v2
+      - name: Slack Notification
+        continue-on-error: true
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: '#FF0000'
+          SLACK_ICON: https://avatars0.githubusercontent.com/u/818058?s=200&v=4
+          SLACK_TITLE: '${{ github.ref_name }} CodeCheck ${{ job.status }} :warning:'
+          SLACK_USERNAME: ${{ github.actor }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: '${{ github.ref_name }} Action ${{ job.status }}'
