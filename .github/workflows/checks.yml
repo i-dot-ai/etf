@@ -60,8 +60,8 @@ jobs:
       - uses: actions/checkout@v3
 
       - run: |
-          docker-compose build etf
-          docker-compose run etf python manage.py makemigrations --check
+          docker-compose build web
+          docker-compose run web python manage.py makemigrations --check
 
       - uses: actions/checkout@v2
       - name: Slack Notification
