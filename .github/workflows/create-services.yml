@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     branches:
       - sandbox
-      - develop
+      - main
 
 jobs:
   create_cfservices:

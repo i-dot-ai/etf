@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - sandbox
-      - develop
+      - main
 
 permissions:
   packages: write
