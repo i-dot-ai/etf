@@ -96,6 +96,8 @@ class FormPage:
         return render(request, self.template_name, {"errors": errors, "data": data, **url_data, **self.extra_data})
 
 
+# TODO - OBVIOUSLY this name needs changing
+# Also, need to make more abstract, so doesn't use `OtherMeasure` model
 class FormPage2:
     def __init__(self, title, field_names, extra_data=None):
         self.title = title
@@ -118,7 +120,7 @@ class FormPage2:
             "other_measures-INITIAL_FORMS": 1,
             "other_measures-MIN_NUM_FORMS": 0,
             "other_measures-MAX_NUM_FORMS": 10,
-        }
+        }  # TODO - what should these numbers be?
         formset = self.form_class(data, instance=evaluation)
         if request.method == "POST":
             data.update(request.POST)
@@ -137,6 +139,9 @@ class FormPage2:
             self.template_name,
             {"formset": formset, "errors": errors, "data": data, **url_data, **self.extra_data},
         )
+
+
+#  <input type="hidden" name="other_measures-TOTAL_FORMS" value="1" id="id_other_measures-TOTAL_FORMS"><input type="hidden" name="other_measures-INITIAL_FORMS" value="0" id="id_other_measures-INITIAL_FORMS"><input type="hidden" name="other_measures-MIN_NUM_FORMS" value="0" id="id_other_measures-MIN_NUM_FORMS"><input type="hidden" name="other_measures-MAX_NUM_FORMS" value="1000" id="id_other_measures-MAX_NUM_FORMS">
 
 
 class SimplePage:
