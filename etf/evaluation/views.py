@@ -96,6 +96,43 @@ class FormPage:
         return render(request, self.template_name, {"errors": errors, "data": data, **url_data, **self.extra_data})
 
 
+
+class FormPage2:
+    def __init__(self, title, field_names, extra_data=None):
+        self.title = title
+        self.slug = slugify(title)
+        self.field_names = field_names
+        self.template_name = f"{self.slug}.pug"
+        self.extra_data = extra_data or {}
+
+        OtherMeasureFormset = forms.inlineformset_factory(parent_model=models.Evaluation, model=models.OtherMeasure, fields=field_names, extra=1)
+        self.form_class = OtherMeasureFormset
+        page_map[self.slug] = self
+
+    def view(self, request, url_data):
+        evaluation_id = url_data["evaluation_id"]
+        evaluation = models.Evaluation.objects.get(pk=evaluation_id)
+        data = {
+            'other_measures-TOTAL_FORMS': 10,
+            'other_measures-INITIAL_FORMS': 1,
+            'other_measures-MIN_NUM_FORMS': 0,
+            'other_measures-MAX_NUM_FORMS': 10}
+        formset = self.form_class(data, instance=evaluation)
+        if request.method == "POST":
+            data.update(request.POST, instance=evaluation)
+            formset = self.form_class(data, instance=evaluation)
+            if formset.is_valid():
+                formset.save()
+                return redirect(url_data["next_url"])
+            else:
+                data = request.POST
+                errors = formset.errors
+        else:
+            data = model_to_dict(evaluation)
+            errors = {}
+        return render(request, self.template_name, {"formset": formset, "errors": errors, "data": data, **url_data, **self.extra_data})
+ 
+
 class SimplePage:
     def __init__(self, title, extra_data=None):
         self.title = title
@@ -110,6 +147,10 @@ class SimplePage:
 SimplePage(title="Intro")
 
 FormPage(title="Title", field_names=("title",))
+
+# TODO - move to a more sensible place
+FormPage2(title="Other measures", field_names=("name", "description", "collection_process",))
+
 
 FormPage(
     title="Description",

@@ -1,0 +1,22 @@
+{% import 'macros.html' as macros with context %}
+
+{% extends "base.pug" %}
+
+block content
+
+
+  form(method="POST")
+    {{csrf_input}}
+
+    fieldset(class="fieldset")
+      legend
+        h3 Other measures
+
+      {{formset.management_form}}
+
+      {% for form in formset %}
+      {{macros.input("name", "Other measure name", type="text")}}
+
+      {% endfor %}
+ 
+      {{macros.buttons(prev_url)}}

@@ -66,6 +66,12 @@
   <button type="submit" class="button float-right">Next <i class="bi-caret-right"></i></button>
 {%- endmacro%}
 
+{% macro buttons2(prev_url, next_url) -%}
+  <a href="{{prev_url}}" class="button float-left"><i class="bi-caret-left"></i> Back</a>
+  <a href="{{next_url}}" class="button float-right">Next <i class="bi-caret-right"></i></button>
+{%- endmacro%}
+
+
 {% macro callout(tags) -%}
   <div class="callout {{tags}}" data-closable>
     {{ caller() }}
