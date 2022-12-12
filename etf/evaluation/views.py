@@ -121,7 +121,7 @@ class FormPage2:
         }
         formset = self.form_class(data, instance=evaluation)
         if request.method == "POST":
-            data.update(request.POST, instance=evaluation)
+            data.update(request.POST)
             formset = self.form_class(data, instance=evaluation)
             if formset.is_valid():
                 formset.save()
